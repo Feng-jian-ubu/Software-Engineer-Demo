@@ -1,0 +1,7 @@
+{
+  "name": "bill-tracker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "大学生流水记账（纯前端，ES Module，零依赖）"
+}

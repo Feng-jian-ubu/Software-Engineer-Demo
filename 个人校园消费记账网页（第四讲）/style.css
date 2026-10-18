@@ -1,0 +1,596 @@
+/**
+ * style.css
+ * 大学生流水记账 — 页面样式
+ * 设计思路：青春校园风 —— 薄荷蓝调渐变底 + 细点阵纹理（手账点阵纸质感）
+ *           + 标题区简笔 doodle 装饰；卡片/面板保留白底以保证可读性，
+ *           用柔和蓝调阴影与渐变细节统一风格；移动端友好、中文界面。
+ * 注意：柱状图 / 统计条 / 分类徽章的颜色由 app.js 按 CATEGORY_COLORS 内联设置，
+ *       本文件不覆盖这些内联色，只做容器与布局层的美化。
+ */
+
+/* ---------------- 基础重置与变量 ---------------- */
+:root {
+  --bg: #edf2fa;
+  --card-bg: #ffffff;
+  --text-main: #1e293b;
+  --text-secondary: #64748b;
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+  --danger: #ef4444;
+  --danger-hover: #dc2626;
+  --expense: #ef4444;
+  --income: #10b981;
+  --border: #e3e9f2;
+  --radius: 16px;
+  /* 带一点蓝色调的柔和阴影，与整体校园蓝调统一 */
+  --shadow: 0 3px 12px rgba(73, 101, 163, 0.08);
+  --shadow-hover: 0 8px 24px rgba(73, 101, 163, 0.14);
+  --transition: 0.2s ease;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  color: var(--text-main);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  background-color: var(--bg);
+  /**
+   * 背景分层（均为纯 CSS 渐变，无图片、零请求）：
+   * 1) 细点阵纹理 —— 模仿手账/笔记点阵纸，透明度极低不刺眼
+   * 2~4) 三处柔和彩色光斑 —— 淡蓝 / 淡紫 / 薄荷，制造青春氛围
+   * 5) 整体渐变底色 —— 淡蓝 → 薄荷 → 淡紫
+   * fixed 让纹理与光斑在滚动时保持不动，视觉更稳；点阵尺寸小、无重绘压力
+   */
+  background-image:
+    radial-gradient(rgba(37, 99, 235, 0.06) 1.3px, transparent 1.4px),
+    radial-gradient(circle at 12% 15%, rgba(96, 165, 250, 0.16), transparent 42%),
+    radial-gradient(circle at 88% 8%, rgba(167, 139, 250, 0.15), transparent 38%),
+    radial-gradient(circle at 85% 88%, rgba(45, 212, 191, 0.13), transparent 45%),
+    linear-gradient(160deg, #e9f0fc 0%, #edfaf4 52%, #f2eefd 100%);
+  background-size: 26px 26px, auto, auto, auto, auto;
+  background-attachment: fixed;
+}
+
+/* ---------------- 布局 ---------------- */
+.app {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 20px 16px 40px;
+}
+
+/* ---------------- 顶部标题区（渐变标题 + doodle 装饰 + slogan pill） ---------------- */
+.app-header {
+  position: relative; /* doodle 绝对定位的参照 */
+  text-align: center;
+  padding: 14px 0 6px;
+  margin-bottom: 22px;
+}
+/* 渐变标题文字：蓝 → 青 → 紫，青春但不刺眼 */
+.app-header h1 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  margin: 0 0 8px;
+  background: linear-gradient(120deg, #2563eb 5%, #0ea5e9 48%, #8b5cf6 95%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+/* 兜底：不支持 background-clip: text 的环境退化为纯色，保证标题可读 */
+@supports not ((background-clip: text) or (-webkit-background-clip: text)) {
+  .app-header h1 { color: var(--primary-hover); }
+}
+/* slogan 做成半透明白底 pill，从背景中轻轻托起 */
+.app-header .subtitle {
+  display: inline-block;
+  margin: 0;
+  padding: 4px 16px;
+  font-size: 0.85rem;
+  color: #4b6a9b;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(96, 165, 250, 0.25);
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(73, 101, 163, 0.06);
+}
+/* 简笔 doodle：分布在标题四周，细描边 + 淡色 + 微旋转，营造手账随性感 */
+.header-doodles { position: absolute; inset: 0; pointer-events: none; }
+.doodle { position: absolute; }
+.doodle-book   { width: 46px; height: 46px; left: 7%;  top: 0;    color: #60a5fa; transform: rotate(-10deg); opacity: 0.8; }
+.doodle-pencil { width: 40px; height: 40px; right: 7%; top: 6px;  color: #a78bfa; transform: rotate(12deg);  opacity: 0.8; }
+.doodle-star   { width: 22px; height: 22px; left: 21%; bottom: 6px; color: #fbbf24; transform: rotate(8deg);  opacity: 0.85; }
+.doodle-coin   { width: 26px; height: 26px; right: 20%; bottom: 0;  color: #34d399; transform: rotate(-8deg); opacity: 0.85; }
+
+/* ---------------- 卡片（顶部渐变细色条 + 柔和阴影 + hover 微动效） ---------------- */
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.card {
+  position: relative;
+  overflow: hidden; /* 让顶部色条跟随卡片圆角 */
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px 12px 16px; /* 顶部留出色条空间 */
+  text-align: center;
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+/* 顶部 4px 渐变细色条：三张卡三个色系，呼应卡片语义 */
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+}
+.balance-card::before { background: linear-gradient(90deg, #60a5fa, #818cf8); } /* 蓝紫：余额 */
+.expense-card::before { background: linear-gradient(90deg, #fb923c, #f87171); } /* 橙红：支出 */
+.income-card::before  { background: linear-gradient(90deg, #34d399, #2dd4bf); } /* 薄荷：收入 */
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+.card-label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+.card-value {
+  display: block;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.balance-card .card-value { color: var(--text-main); }
+.balance-card .card-value.negative { color: var(--danger); }
+.expense-card .card-value { color: var(--expense); }
+.income-card .card-value { color: var(--income); }
+
+/* ---------------- 面板 ---------------- */
+.panel {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px 18px;
+  margin-bottom: 20px;
+  transition: box-shadow var(--transition);
+}
+.panel:hover { box-shadow: var(--shadow-hover); }
+/* 面板标题左侧加蓝紫渐变竖条，统一细节风格 */
+.panel h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0 0 14px;
+}
+.panel h2::before {
+  content: '';
+  flex-shrink: 0;
+  width: 4px;
+  height: 1em;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #3b82f6, #8b5cf6);
+}
+.panel-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.panel-title-row h2 { margin: 0; }
+
+/* ---------------- 预算 ---------------- */
+.budget-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.budget-form input[type="month"] { width: 148px; }
+.budget-form input[type="number"] { width: 140px; }
+.budget-status {
+  margin: 0 0 10px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+.budget-bar-wrap {
+  width: 100%;
+  height: 12px;
+  background: #e6ecf5;
+  border-radius: 999px;
+  overflow: hidden;
+}
+/* 预算条按状态使用渐变色（class 由 app.js 切换：默认 / near / over） */
+.budget-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #3b82f6, #38bdf8);
+  transition: width 0.4s ease, background 0.3s ease;
+  border-radius: 999px;
+}
+.budget-bar.near { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+.budget-bar.over { background: linear-gradient(90deg, #ef4444, #fb7185); }
+.budget-warning {
+  margin: 10px 0 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.budget-warning.warn { color: #d97706; }
+.budget-warning.danger { color: var(--danger); }
+
+/* ---------------- 记账表单 ---------------- */
+.type-switch {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.type-option {
+  flex: 1;
+  text-align: center;
+  cursor: pointer;
+  border-radius: 12px;
+  padding: 10px;
+  border: 2px solid var(--border);
+  transition: border-color var(--transition), background var(--transition);
+}
+.type-option input { position: absolute; opacity: 0; }
+.type-option span {
+  display: block;
+  font-weight: 600;
+}
+.type-option.expense { color: var(--expense); }
+.type-option.income { color: var(--income); }
+.type-option:hover { border-color: #cbd5e1; }
+.type-option input:checked + span { font-weight: 700; }
+.type-option.expense input:checked + span { color: #fff; }
+/* 选中态用轻微渐变，比纯色更有活力 */
+.type-option.expense:has(input:checked) { background: linear-gradient(135deg, #f87171, #ef4444); border-color: var(--expense); }
+.type-option.income input:checked + span { color: #fff; }
+.type-option.income:has(input:checked) { background: linear-gradient(135deg, #34d399, #10b981); border-color: var(--income); }
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.field-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+input[type="number"],
+input[type="text"],
+input[type="date"],
+input[type="month"],
+select {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #f8fafc;
+  color: var(--text-main);
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+input:focus, select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.14);
+  background: #fff;
+}
+
+.form-error {
+  margin: 10px 0 0;
+  color: var(--danger);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.hidden { display: none !important; }
+
+/* file:// 协议提示横幅（逻辑不动，保持红色警示语义） */
+.file-tip {
+  max-width: 960px;
+  margin: 0 auto 16px;
+  padding: 14px 18px;
+  border-radius: 10px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.file-tip code {
+  background: #fff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #fca5a5;
+}
+
+/* ---------------- 按钮 ---------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+}
+.btn:hover { transform: translateY(-1px); }
+/* 主按钮：蓝 → 靛青渐变，hover 加深并带柔和投影 */
+.btn-primary {
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  color: #fff;
+}
+.btn-primary:hover {
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+.btn-ghost {
+  background: #eef2f8;
+  color: var(--text-main);
+  border: 1px solid var(--border);
+}
+.btn-ghost:hover { background: #e2e8f2; }
+.btn-block { width: 100%; padding: 12px; font-size: 1rem; }
+
+/* ---------------- 统计 ---------------- */
+.stats-range {
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-left: 6px;
+}
+.stats-toggle {
+  display: flex;
+  gap: 8px;
+}
+.chip {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #eef2f8;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+.chip:hover { border-color: #cbd5e1; }
+.chip.active {
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  color: #fff;
+  border-color: transparent;
+}
+
+.stats-list { display: flex; flex-direction: column; gap: 12px; }
+.stats-row { display: flex; flex-direction: column; gap: 6px; }
+.stats-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+}
+.stats-cat {
+  font-weight: 600;
+}
+.stats-val {
+  color: var(--text-secondary);
+}
+.stats-bar-wrap {
+  width: 100%;
+  height: 10px;
+  background: #e6ecf5;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.stats-bar {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.5s ease;
+}
+
+/* ---------------- 本月支出柱状图 ---------------- */
+/* 横向排布的纵向柱子，分类较多时允许横向滚动（移动端友好） */
+.chart-list {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  padding: 6px 4px 0;
+  overflow-x: auto;
+}
+/* 每根柱子所在列：上方金额、中间柱体、下方分类名 */
+.chart-col {
+  flex: 1 0 56px; /* 等分宽度，最小 56px，空间不足时触发横向滚动 */
+  max-width: 88px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.chart-val {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+/* 柱状区域固定高度，柱高按金额占最大值百分比缩放 */
+.chart-bar-wrap {
+  width: 100%;
+  height: 140px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.chart-bar {
+  width: 100%;
+  border-radius: 8px 8px 4px 4px;
+  transition: height 0.4s ease;
+}
+.chart-cat {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+}
+
+/* ---------------- 流水明细 ---------------- */
+.filter-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.filter-row input[type="month"] { width: 148px; }
+.filter-row input[type="date"] { width: 148px; }
+
+.record-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.record-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-left-width: 3px; /* 左侧收支色条（JS 会给 li 加 expense / income 修饰类） */
+  transition: background var(--transition);
+}
+.record-item.expense { border-left-color: rgba(239, 68, 68, 0.5); }
+.record-item.income  { border-left-color: rgba(16, 185, 129, 0.5); }
+.record-item:hover { background: #f1f5fb; }
+.record-badge {
+  flex-shrink: 0;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 8px;
+  min-width: 52px;
+  text-align: center;
+}
+.record-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.record-note {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.record-date {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+.record-right {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: right;
+}
+.record-amount {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+.record-amount.expense { color: var(--expense); }
+.record-amount.income { color: var(--income); }
+.record-delete {
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--danger);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+}
+.record-delete:hover {
+  background: #fef2f2;
+  border-color: var(--danger);
+}
+
+/* 空态：淡底虚线边框 pill，手账感且与新风格统一 */
+.empty-tip {
+  width: fit-content;
+  margin: 16px auto;
+  padding: 8px 18px;
+  text-align: center;
+  color: #5f7499;
+  font-size: 0.9rem;
+  background: #f4f7fd;
+  border: 1px dashed #c3d3ee;
+  border-radius: 999px;
+}
+
+/* ---------------- 轻提示 ---------------- */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%) translateY(20px);
+  opacity: 0;
+  pointer-events: none;
+  background: #1e293b;
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.22);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  z-index: 100;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.toast.warn { background: #d97706; }
+.toast.error { background: var(--danger); }
+
+/* ---------------- 响应式 ---------------- */
+@media (max-width: 640px) {
+  .app { padding: 16px 12px 32px; }
+  .app-header h1 { font-size: 1.5rem; }
+  /* 小屏收敛装饰：书本/铅笔缩小贴近边缘，星星/钱币隐藏避免拥挤 */
+  .doodle-book   { width: 34px; height: 34px; left: 2%; }
+  .doodle-pencil { width: 30px; height: 30px; right: 2%; }
+  .doodle-star, .doodle-coin { display: none; }
+  .summary-cards { grid-template-columns: 1fr; gap: 10px; }
+  .form-grid { grid-template-columns: 1fr; }
+  .panel-title-row { flex-direction: column; align-items: flex-start; }
+  .budget-form { flex-wrap: wrap; }
+  .filter-row { flex-wrap: wrap; }
+  .filter-row input[type="month"],
+  .filter-row input[type="date"] { width: auto; flex: 1; min-width: 120px; }
+  .budget-form input[type="month"],
+  .budget-form input[type="number"] { width: auto; flex: 1; min-width: 120px; }
+}

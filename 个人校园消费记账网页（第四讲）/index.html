@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>大学生流水记账</title>
+  <link rel="stylesheet" href="./style.css?v=20261018">
+</head>
+<body>
+  <div id="fileProtocolTip" class="file-tip hidden">
+    <strong>当前以文件方式打开，页面功能无法正常使用</strong><br>
+    请通过本地服务器访问：在终端运行 <code>npx serve</code> 或 VS Code 的 Live Server 打开此项目，然后访问 <code>http://localhost:3000</code>
+  </div>
+  <div class="app">
+    <!-- 顶部标题：内联 SVG 简笔 doodle 装饰（纯装饰，aria-hidden，不参与任何逻辑） -->
+    <header class="app-header">
+      <div class="header-doodles" aria-hidden="true">
+        <!-- 简笔画：翻开的书本 -->
+        <svg class="doodle doodle-book" viewBox="0 0 48 48" fill="none">
+          <path d="M7 12c6-3.2 12-3.2 17 0 5-3.2 11-3.2 17 0v24c-6-3.2-12-3.2-17 0-5-3.2-11-3.2-17 0V12z" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/>
+          <path d="M24 12v24" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
+        </svg>
+        <!-- 简笔画：铅笔 -->
+        <svg class="doodle doodle-pencil" viewBox="0 0 48 48" fill="none">
+          <path d="M30.5 8.5l9 9-21.5 21.5-11.5 2.5 2.5-11.5L30.5 8.5z" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/>
+          <path d="M26.5 12.5l9 9" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
+        </svg>
+        <!-- 简笔画：小星星 -->
+        <svg class="doodle doodle-star" viewBox="0 0 24 24" fill="none">
+          <path d="M12 3.6l2.3 4.9 5.3.7-3.9 3.7 1 5.3-4.7-2.6-4.7 2.6 1-5.3-3.9-3.7 5.3-.7L12 3.6z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+        </svg>
+        <!-- 简笔画：钱币（¥） -->
+        <svg class="doodle doodle-coin" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="8.6" stroke="currentColor" stroke-width="1.8"/>
+          <path d="M8.4 7.6L12 11.6l3.6-4M12 11.6v5M9.3 13.4h5.4M9.3 15.6h5.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h1>大学生流水记账</h1>
+      <p class="subtitle">记录每一笔收支，做自己的生活费管家</p>
+    </header>
+
+    <!-- 总览卡片：余额 / 本月支出 / 本月收入 -->
+    <section class="summary-cards">
+      <div class="card balance-card">
+        <span class="card-label">账内余额</span>
+        <span class="card-value" id="balanceValue">¥0.00</span>
+      </div>
+      <div class="card expense-card">
+        <span class="card-label">本月支出</span>
+        <span class="card-value" id="monthExpenseValue">¥0.00</span>
+      </div>
+      <div class="card income-card">
+        <span class="card-label">本月收入</span>
+        <span class="card-value" id="monthIncomeValue">¥0.00</span>
+      </div>
+    </section>
+
+    <!-- 月度预算 -->
+    <section class="panel">
+      <div class="panel-title-row">
+        <h2>月度预算</h2>
+        <form id="budgetForm" class="budget-form">
+          <input type="month" id="budgetMonth" required>
+          <input type="number" id="budgetAmount" min="0.01" step="0.01" placeholder="预算金额（元）" required>
+          <button type="submit" class="btn btn-primary">设置</button>
+        </form>
+      </div>
+      <p class="budget-status" id="budgetStatus">尚未设置本月预算</p>
+      <div class="budget-bar-wrap">
+        <div class="budget-bar" id="budgetBar"></div>
+      </div>
+      <p class="budget-warning hidden" id="budgetWarning"></p>
+    </section>
+
+    <!-- 本月支出柱状图（固定统计当前自然月，不受筛选影响） -->
+    <section class="panel">
+      <h2>本月支出柱状图 <small class="stats-range" id="monthlyChartMonth"></small></h2>
+      <div id="monthlyChart" class="chart-list"></div>
+      <p class="empty-tip hidden" id="monthlyChartEmpty">本月暂无支出记录，快记一笔吧～</p>
+    </section>
+
+    <!-- 记一笔 -->
+    <section class="panel">
+      <h2>记一笔</h2>
+      <form id="recordForm" class="record-form">
+        <div class="type-switch">
+          <label class="type-option expense">
+            <input type="radio" name="type" value="expense" checked>
+            <span>支出</span>
+          </label>
+          <label class="type-option income">
+            <input type="radio" name="type" value="income">
+            <span>收入</span>
+          </label>
+        </div>
+        <div class="form-grid">
+          <label class="field">
+            <span class="field-label">金额（元）</span>
+            <input type="number" id="amountInput" min="0.01" step="0.01" placeholder="0.00" required>
+          </label>
+          <label class="field">
+            <span class="field-label">分类</span>
+            <select id="categorySelect"></select>
+          </label>
+          <label class="field">
+            <span class="field-label">日期</span>
+            <input type="date" id="dateInput" required>
+          </label>
+          <label class="field">
+            <span class="field-label">备注（可选）</span>
+            <input type="text" id="noteInput" maxlength="50" placeholder="例如：食堂午餐">
+          </label>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">添加记录</button>
+        <p class="form-error hidden" id="formError"></p>
+      </form>
+    </section>
+
+    <!-- 分类统计 -->
+    <section class="panel">
+      <div class="panel-title-row">
+        <h2>分类统计 <small class="stats-range" id="statsRange">全部时间</small></h2>
+        <div class="stats-toggle">
+          <button type="button" class="chip active" data-stats-type="expense">支出占比</button>
+          <button type="button" class="chip" data-stats-type="income">收入占比</button>
+        </div>
+      </div>
+      <div id="statsList" class="stats-list"></div>
+      <p class="empty-tip hidden" id="statsEmpty">当前范围内暂无数据</p>
+    </section>
+
+    <!-- 流水明细 -->
+    <section class="panel">
+      <div class="panel-title-row">
+        <h2>流水明细</h2>
+        <div class="filter-row">
+          <input type="month" id="filterMonth" title="按月份筛选">
+          <input type="date" id="filterDate" title="按日期筛选">
+          <button type="button" id="clearFilterBtn" class="btn btn-ghost">清除筛选</button>
+        </div>
+      </div>
+      <ul id="recordList" class="record-list"></ul>
+      <p class="empty-tip hidden" id="emptyTip">暂无记录，快记一笔吧～</p>
+    </section>
+  </div>
+
+  <!-- 轻提示 -->
+  <div id="toast" class="toast"></div>
+
+  <script type="module" src="./app.js?v=20261018"></script>
+  <script>
+    if (location.protocol === 'file:') {
+      document.getElementById('fileProtocolTip').classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>
